@@ -1,0 +1,29 @@
+{
+    "name": "michaeljoyner/simple-json-endpoint",
+    "description": "If you just want to get some JSON from an endpoint and also possibly cache it, this makes life easier. Example use cases include fetching instagram feed, weather data, exchange rates, etc. You just need to worry about how you deal with the data.",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Michael Joyner",
+            "email": "joyner.michael@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.0",
+        "guzzlehttp/guzzle": "^6.3"
+    },
+    "require-dev": {
+        "orchestra/testbench": "~3.0",
+        "phpunit/phpunit": "^6.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "michaeljoyner\\SimpleJsonEndpoint\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SimpleJsonEndpoint\\Tests\\": "tests/"
+        }
+    }
+}
