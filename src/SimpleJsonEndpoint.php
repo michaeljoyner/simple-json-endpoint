@@ -18,49 +18,50 @@ abstract class SimpleJsonEndpoint
         $this->http = app()->make(SimpleJsonClient::class);
     }
 
-    abstract protected function getEndpointUrl(array $options);
+    abstract protected function getEndpointUrl(array $options = []);
 
     public function fetch()
     {
-        $url = $this->getEndpointUrl(...func_get_args());
+        if (cache()->has($this->cache_key)) {
+            return cache($this->cache_key);
+        }
 
-        return Cache::remember($this->cache_key, $this->cache_minutes, function () use ($url) {
-
-            try {
-                $response = $this->http->fetch($url);
-            } catch (\Exception $e) {
-                return $this->failedRequest();
-            }
-
-            if (($response->getStatusCode() / 100) >= 4) {
-                return $this->failedRequest();
-            }
-
-
-            return $this->parseResponse(\GuzzleHttp\json_decode($response->getBody()->getContents(), true));
-        });
-
+        return $this->performRequest($this->getEndpointUrl(...func_get_args()));
     }
 
     public function refresh()
     {
-        $url = $this->getEndpointUrl(...func_get_args());
+        return $this->performRequest($this->getEndpointUrl(...func_get_args()));
+    }
 
+    private function performRequest($url)
+    {
         try {
-            $response = $this->http->fetch($url);
+            return $this->getParsedAndCachedResponse($url);
         } catch (\Exception $e) {
             return $this->failedRequest();
         }
+    }
 
-        if (($response->getStatusCode() / 100) >= 4) {
-            return $this->failedRequest();
+    private function getParsedAndCachedResponse($url)
+    {
+        $response = $this->decodeJson($this->http->fetch($url)->getBody()->getContents(), true);
+
+        return tap($this->parseResponse($response),
+            function ($value) {
+                cache([$this->cache_key => $value], $this->cache_minutes);
+            });
+    }
+
+    private function decodeJson($response)
+    {
+        $data = json_decode($response, true);
+        if (JSON_ERROR_NONE !== json_last_error()) {
+            throw new \InvalidArgumentException(
+                'json_decode error: ' . json_last_error_msg());
         }
 
-        return tap(
-            $this->parseResponse(\GuzzleHttp\json_decode($response->getBody()->getContents(), true)),
-            function ($value) {
-                Cache::put($this->cache_key, $value, $this->cache_minutes);
-            });
+        return $data;
     }
 
     protected function parseResponse($response)
